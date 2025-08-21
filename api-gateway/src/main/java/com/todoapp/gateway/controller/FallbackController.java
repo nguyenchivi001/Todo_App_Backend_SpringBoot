@@ -1,4 +1,4 @@
-package com.todoapp.gateway.config;
+package com.todoapp.gateway.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
