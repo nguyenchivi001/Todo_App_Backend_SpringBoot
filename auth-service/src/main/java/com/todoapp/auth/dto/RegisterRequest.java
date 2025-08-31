@@ -31,9 +31,11 @@ public class RegisterRequest {
     private String lastName;
 
     // Constructors
-    public RegisterRequest(String username, String email, String password) {
+    public RegisterRequest(String username, String email, String password, String firstName, String lastName) {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 }
