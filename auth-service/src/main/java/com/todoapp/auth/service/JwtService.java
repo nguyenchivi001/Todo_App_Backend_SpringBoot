@@ -1,5 +1,6 @@
 package com.todoapp.auth.service;
 
+import com.todoapp.auth.config.JwtConfig;
 import com.todoapp.auth.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -27,21 +28,11 @@ import java.util.function.Function;
 @Setter
 public class JwtService {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
-
-    @Value("${jwt.access-token-expiration}")
-    private long accessTokenExpiration;
-
-    @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenExpiration;
-
-    @Value("${jwt.issuer}")
-    private String issuer;
-
+    private final JwtConfig jwtConfig;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public JwtService(RedisTemplate<String, Object> redisTemplate) {
+    public JwtService(JwtConfig jwtConfig, RedisTemplate<String, Object> redisTemplate) {
+        this.jwtConfig = jwtConfig;
         this.redisTemplate = redisTemplate;
     }
 
@@ -55,7 +46,7 @@ public class JwtService {
         extraClaims.put("email", user.getEmail());
         extraClaims.put("enabled", user.isEnabled());
 
-        return generateToken(extraClaims, user.getUsername(), accessTokenExpiration);
+        return generateToken(extraClaims, user.getUsername(), jwtConfig.getAccessTokenExpiration());
     }
 
     /**
@@ -66,7 +57,7 @@ public class JwtService {
         extraClaims.put("type", "refresh");
         extraClaims.put("userId", user.getId().toString());
 
-        return generateToken(extraClaims, user.getUsername(), refreshTokenExpiration);
+        return generateToken(extraClaims, user.getUsername(), jwtConfig.getRefreshTokenExpiration());
     }
 
     /**
@@ -77,9 +68,9 @@ public class JwtService {
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .claims(extraClaims) // hoặc .addClaims(extraClaims)
+                .claims(extraClaims)
                 .subject(subject)
-                .issuer(issuer)
+                .issuer(jwtConfig.getIssuer())
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
@@ -231,7 +222,7 @@ public class JwtService {
      * Get signing key
      */
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtConfig.getSecret());
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
