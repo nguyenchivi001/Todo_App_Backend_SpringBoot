@@ -3,6 +3,7 @@ package com.todoapp.task.service;
 import com.todoapp.task.dto.*;
 import com.todoapp.task.dto.request.TaskRequest;
 import com.todoapp.task.dto.response.TaskResponse;
+import com.todoapp.task.dto.response.TaskStatisticsResponse;
 import com.todoapp.task.enums.Priority;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
