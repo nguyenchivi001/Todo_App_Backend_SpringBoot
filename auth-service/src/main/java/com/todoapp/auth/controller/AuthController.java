@@ -3,6 +3,7 @@ package com.todoapp.auth.controller;
 import com.todoapp.auth.dto.*;
 import com.todoapp.auth.entity.RefreshToken;
 import com.todoapp.auth.service.AuthService;
+import com.todoapp.auth.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -20,8 +21,10 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, UserService userService) {
+        this.userService = userService;
         this.authService = authService;
     }
 
@@ -235,7 +238,7 @@ public class AuthController {
      */
     @GetMapping("/check-username")
     public ResponseEntity<Map<String, Object>> checkUsername(@RequestParam String username) {
-        boolean exists = authService.getUserService().existsByUsername(username);
+        boolean exists = userService.existsByUsername(username);
 
         Map<String, Object> response = new HashMap<>();
         response.put("username", username);
@@ -249,7 +252,7 @@ public class AuthController {
      */
     @GetMapping("/check-email")
     public ResponseEntity<Map<String, Object>> checkEmail(@RequestParam String email) {
-        boolean exists = authService.getUserService().existsByEmail(email);
+        boolean exists = userService.existsByEmail(email);
 
         Map<String, Object> response = new HashMap<>();
         response.put("email", email);
