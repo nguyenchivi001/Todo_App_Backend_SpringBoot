@@ -17,10 +17,11 @@ import java.util.List;
 @NoArgsConstructor
 public class TaskRequest {
 
-    @NotBlank(message = "Task title is required")
+    @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title cannot exceed 255 characters")
     private String title;
 
+    @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
 
     private Boolean completed = false;

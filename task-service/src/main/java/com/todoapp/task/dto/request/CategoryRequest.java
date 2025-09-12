@@ -16,6 +16,7 @@ public class CategoryRequest {
     @Size(max = 100, message = "Category name cannot exceed 100 characters")
     private String name;
 
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
 
     @Pattern(regexp = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", message = "Color must be a valid hex color code")
