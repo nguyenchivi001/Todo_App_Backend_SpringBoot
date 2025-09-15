@@ -1,0 +1,137 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: todoapp-mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: todo_auth
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - todoapp-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 30s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: todoapp-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --append only yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - todoapp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: todoapp-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # JWT config
+      - JWT_SECRET=mySecretKey123456789mySecretKey123456789mySecretKey123456789abcdefghijklmnop
+      - JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - JWT_REFRESH_TOKEN_EXPIRATION=86400000
+    depends_on:
+      auth-service:
+        condition: service_started
+    networks:
+      - todoapp-network
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: todoapp-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # Database config
+      - SPRING_DATASOURCE_URL=jdbc:mysql://todoapp-mysql:3306/todo_auth?createDatabaseIfNotExist=false&serverTimezone=Asia/Ho_Chi_Minh&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=password
+      # JWT config
+      - JWT_SECRET=mySecretKey123456789mySecretKey123456789mySecretKey123456789abcdefghijklmnop
+      - JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - JWT_REFRESH_TOKEN_EXPIRATION=86400000
+      # Redis config
+      - SPRING_REDIS_HOST=todoapp-redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_ENABLED=true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - todoapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  task-service:
+    build:
+      context: ./task-service
+      dockerfile: Dockerfile
+    container_name: todoapp-task-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # Database config
+      - SPRING_DATASOURCE_URL=jdbc:mysql://todoapp-mysql:3306/todo_auth?createDatabaseIfNotExist=false&serverTimezone=Asia/Ho_Chi_Minh&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=password
+      # JWT config
+      - JWT_SECRET=mySecretKey123456789mySecretKey123456789mySecretKey123456789abcdefghijklmnop
+      - JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - JWT_REFRESH_TOKEN_EXPIRATION=86400000
+      # Redis config
+      - SPRING_REDIS_HOST=todoapp-redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_ENABLED=true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - todoapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  todoapp-network:
+    driver: bridge
