@@ -1,4 +1,26 @@
 -- ============================================
+-- TASK CATEGORIES TABLE
+-- ============================================
+CREATE TABLE task_categories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    color VARCHAR(7) NOT NULL DEFAULT '#007bff',
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_category_name (user_id, name),
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_name (name),
+    INDEX idx_color (color),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================
 -- TASKS TABLE - Core task management
 -- ============================================
 CREATE TABLE tasks (
@@ -32,26 +54,6 @@ CREATE TABLE tasks (
     FULLTEXT INDEX idx_title_description (title, description)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TASK CATEGORIES TABLE
--- ============================================
-CREATE TABLE task_categories (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    color VARCHAR(7) NOT NULL DEFAULT '#007bff',
-    user_id BIGINT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_category_name (user_id, name),
-
-    INDEX idx_user_id (user_id),
-    INDEX idx_name (name),
-    INDEX idx_color (color),
-    INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
 -- TASK TAGS TABLE
