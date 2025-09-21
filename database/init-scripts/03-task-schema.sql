@@ -1,42 +1,34 @@
--- ============================================
--- TASK CATEGORIES TABLE
--- ============================================
-CREATE TABLE task_categories (
+-- Task categories table
+CREATE TABLE todo_task.task_categories (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     color VARCHAR(7) NOT NULL DEFAULT '#007bff',
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- reference to todo_auth.users.id (no FK)
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_category_name (user_id, name),
-
     INDEX idx_user_id (user_id),
     INDEX idx_name (name),
     INDEX idx_color (color),
     INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
-
--- ============================================
--- TASKS TABLE - Core task management
--- ============================================
-CREATE TABLE tasks (
+-- Tasks table
+CREATE TABLE todo_task.tasks (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- reference to todo_auth.users.id (no FK)
     category_id BIGINT,
     due_date TIMESTAMP NULL,
     priority ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL DEFAULT 'MEDIUM',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES task_categories(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES todo_task.task_categories(id) ON DELETE SET NULL,
 
     INDEX idx_user_id (user_id),
     INDEX idx_category_id (category_id),
@@ -44,102 +36,65 @@ CREATE TABLE tasks (
     INDEX idx_priority (priority),
     INDEX idx_due_date (due_date),
     INDEX idx_created_at (created_at),
-    INDEX idx_updated_at (updated_at),
-    INDEX idx_user_completed (user_id, completed),
-    INDEX idx_user_priority (user_id, priority),
-    INDEX idx_user_due_completed (user_id, due_date, completed),
-    INDEX idx_user_category (user_id, category_id),
-    INDEX idx_user_created_completed (user_id, created_at, completed),
+    INDEX idx_updated_at (updated_at)
+);
 
-    FULLTEXT INDEX idx_title_description (title, description)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- ============================================
--- TASK TAGS TABLE
--- ============================================
-CREATE TABLE task_tags (
+-- Task tags
+CREATE TABLE todo_task.task_tags (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- reference to todo_auth.users.id (no FK)
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_tag_name (user_id, name),
-
     INDEX idx_user_id (user_id),
     INDEX idx_name (name),
     INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
--- ============================================
--- TASK TAG RELATIONSHIPS (Many-to-Many)
--- ============================================
-CREATE TABLE task_tag_relationships (
+-- Task tag relationships
+CREATE TABLE todo_task.task_tag_relationships (
     task_id BIGINT NOT NULL,
     tag_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (task_id, tag_id),
-    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES task_tags(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES todo_task.tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES todo_task.task_tags(id) ON DELETE CASCADE
+);
 
-    INDEX idx_task_id (task_id),
-    INDEX idx_tag_id (tag_id),
-    INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================
--- TASK COMMENTS TABLE
--- ============================================
-CREATE TABLE task_comments (
+-- Task comments
+CREATE TABLE todo_task.task_comments (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     task_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- reference to todo_auth.users.id (no FK)
     comment TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES todo_task.tasks(id) ON DELETE CASCADE
+);
 
-    INDEX idx_task_id (task_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_created_at (created_at),
-    INDEX idx_updated_at (updated_at),
-    INDEX idx_task_created (task_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================
--- TASK ACTIVITY LOG TABLE - Track changes
--- ============================================
-CREATE TABLE task_activity_log (
+-- Task activity log
+CREATE TABLE todo_task.task_activity_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     task_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL, -- reference to todo_auth.users.id (no FK)
     activity_type ENUM('CREATED', 'UPDATED', 'COMPLETED', 'REOPENED', 'DELETED', 'COMMENTED', 'PRIORITY_CHANGED', 'DUE_DATE_CHANGED', 'CATEGORY_CHANGED', 'TAG_ADDED', 'TAG_REMOVED') NOT NULL,
     old_value TEXT,
     new_value TEXT,
     description VARCHAR(500),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-
-    INDEX idx_task_id (task_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_activity_type (activity_type),
-    INDEX idx_created_at (created_at),
-    INDEX idx_task_activity (task_id, activity_type),
-    INDEX idx_task_created (task_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+    FOREIGN KEY (task_id) REFERENCES todo_task.tasks(id) ON DELETE CASCADE
+);
 -- ============================================
 -- INSERT SAMPLE DATA
 -- ============================================
 
+
 -- Insert sample categories
-INSERT INTO task_categories (name, description, color, user_id) VALUES
+INSERT INTO todo_task.task_categories (name, description, color, user_id) VALUES
 ('Development', 'Software development tasks', '#007bff', 1),
 ('Testing', 'Testing and quality assurance tasks', '#28a745', 1),
 ('Documentation', 'Documentation and writing tasks', '#ffc107', 1),
@@ -148,7 +103,7 @@ INSERT INTO task_categories (name, description, color, user_id) VALUES
 ('Planning', 'Planning and strategy tasks', '#fd7e14', 1);
 
 -- Insert sample tags
-INSERT INTO task_tags (name, user_id) VALUES
+INSERT INTO todo_task.task_tags (name, user_id) VALUES
 ('urgent', 1),
 ('backend', 1),
 ('frontend', 1),
@@ -165,7 +120,7 @@ INSERT INTO task_tags (name, user_id) VALUES
 ('spring-boot', 1);
 
 -- Insert sample tasks
-INSERT INTO tasks (title, description, completed, user_id, category_id, due_date, priority) VALUES
+INSERT INTO todo_task.tasks (title, description, completed, user_id, category_id, due_date, priority) VALUES
 ('Setup Development Environment', 'Install Java, Spring Boot, MySQL and configure the development environment', FALSE, 1, 1, DATE_ADD(NOW(), INTERVAL 3 DAY), 'HIGH'),
 ('Create User Authentication', 'Implement JWT-based authentication system with refresh tokens', FALSE, 1, 1, DATE_ADD(NOW(), INTERVAL 5 DAY), 'HIGH'),
 ('Design Database Schema', 'Create tables for users, tasks, and refresh tokens', TRUE, 1, 1, DATE_SUB(NOW(), INTERVAL 1 DAY), 'MEDIUM'),
@@ -182,7 +137,7 @@ INSERT INTO tasks (title, description, completed, user_id, category_id, due_date
 -- ============================================
 
 -- Active tasks view
-CREATE VIEW active_tasks AS
+CREATE VIEW todo_task.active_tasks AS
 SELECT
     t.id,
     t.title,
@@ -202,13 +157,13 @@ SELECT
         WHEN t.due_date <= DATE_ADD(NOW(), INTERVAL 7 DAY) AND t.completed = FALSE THEN 'Due Soon'
         ELSE 'On Track'
     END as status
-FROM tasks t
-JOIN users u ON t.user_id = u.id
-LEFT JOIN task_categories c ON t.category_id = c.id
+FROM todo_task.tasks t
+JOIN todo_auth.users u ON t.user_id = u.id
+LEFT JOIN todo_task.task_categories c ON t.category_id = c.id
 WHERE u.enabled = TRUE AND u.account_locked = FALSE;
 
 -- Task statistics view
-CREATE VIEW task_statistics AS
+CREATE VIEW todo_task.task_statistics AS
 SELECT
     u.id as user_id,
     u.username,
@@ -223,8 +178,8 @@ SELECT
     ROUND(AVG(CASE WHEN t.completed = TRUE THEN 1 ELSE 0 END) * 100, 2) as completion_rate,
     MAX(t.created_at) as last_task_created,
     MAX(t.updated_at) as last_task_updated
-FROM users u
-LEFT JOIN tasks t ON u.id = t.user_id
+FROM todo_auth.users u
+LEFT JOIN todo_task.tasks t ON u.id = t.user_id
 WHERE u.enabled = TRUE AND u.account_locked = FALSE
 GROUP BY u.id, u.username, u.email;
 
@@ -234,58 +189,58 @@ GROUP BY u.id, u.username, u.email;
 
 DELIMITER //
 
-CREATE TRIGGER update_tasks_timestamp
-    BEFORE UPDATE ON tasks
+CREATE TRIGGER todo_task.update_tasks_timestamp
+    BEFORE UPDATE ON todo_task.tasks
     FOR EACH ROW
 BEGIN
     SET NEW.updated_at = CURRENT_TIMESTAMP;
 END//
 
-CREATE TRIGGER update_task_categories_timestamp
-    BEFORE UPDATE ON task_categories
+CREATE TRIGGER todo_task.update_task_categories_timestamp
+    BEFORE UPDATE ON todo_task.task_categories
     FOR EACH ROW
 BEGIN
     SET NEW.updated_at = CURRENT_TIMESTAMP;
 END//
 
-CREATE TRIGGER update_task_comments_timestamp
-    BEFORE UPDATE ON task_comments
+CREATE TRIGGER todo_task.update_task_comments_timestamp
+    BEFORE UPDATE ON todo_task.task_comments
     FOR EACH ROW
 BEGIN
     SET NEW.updated_at = CURRENT_TIMESTAMP;
 END//
 
-CREATE TRIGGER log_task_creation
-    AFTER INSERT ON tasks
+CREATE TRIGGER todo_task.log_task_creation
+    AFTER INSERT ON todo_task.tasks
     FOR EACH ROW
 BEGIN
-    INSERT INTO task_activity_log (task_id, user_id, activity_type, new_value, description)
+    INSERT INTO todo_task.task_activity_log (task_id, user_id, activity_type, new_value, description)
     VALUES (NEW.id, NEW.user_id, 'CREATED', NEW.title, CONCAT('Task "', NEW.title, '" was created'));
 END//
 
-CREATE TRIGGER log_task_completion
-    AFTER UPDATE ON tasks
+CREATE TRIGGER todo_task.log_task_completion
+    AFTER UPDATE ON todo_task.tasks
     FOR EACH ROW
 BEGIN
     IF OLD.completed = FALSE AND NEW.completed = TRUE THEN
-        INSERT INTO task_activity_log (task_id, user_id, activity_type, old_value, new_value, description)
+        INSERT INTO todo_task.task_activity_log (task_id, user_id, activity_type, old_value, new_value, description)
         VALUES (NEW.id, NEW.user_id, 'COMPLETED', 'FALSE', 'TRUE', CONCAT('Task "', NEW.title, '" was completed'));
     ELSEIF OLD.completed = TRUE AND NEW.completed = FALSE THEN
-        INSERT INTO task_activity_log (task_id, user_id, activity_type, old_value, new_value, description)
+        INSERT INTO todo_task.task_activity_log (task_id, user_id, activity_type, old_value, new_value, description)
         VALUES (NEW.id, NEW.user_id, 'REOPENED', 'TRUE', 'FALSE', CONCAT('Task "', NEW.title, '" was reopened'));
     END IF;
 
     IF OLD.title != NEW.title OR OLD.description != NEW.description OR OLD.priority != NEW.priority OR OLD.due_date != NEW.due_date THEN
-        INSERT INTO task_activity_log (task_id, user_id, activity_type, description)
+        INSERT INTO todo_task.task_activity_log (task_id, user_id, activity_type, description)
         VALUES (NEW.id, NEW.user_id, 'UPDATED', CONCAT('Task "', NEW.title, '" was updated'));
     END IF;
 END//
 
-CREATE TRIGGER log_task_comment
-    AFTER INSERT ON task_comments
+CREATE TRIGGER todo_task.log_task_comment
+    AFTER INSERT ON todo_task.task_comments
     FOR EACH ROW
 BEGIN
-    INSERT INTO task_activity_log (task_id, user_id, activity_type, new_value, description)
+    INSERT INTO todo_task.task_activity_log (task_id, user_id, activity_type, new_value, description)
     VALUES (NEW.task_id, NEW.user_id, 'COMMENTED', LEFT(NEW.comment, 100),
            CONCAT('Comment added to task by user ID ', NEW.user_id));
 END//
@@ -296,34 +251,32 @@ DELIMITER ;
 -- ADD COMMENTS TO TABLES
 -- ============================================
 
-ALTER TABLE tasks COMMENT = 'Core tasks with user assignments, categories, and tracking';
-ALTER TABLE task_categories COMMENT = 'User-defined categories for organizing tasks';
-ALTER TABLE task_tags COMMENT = 'Flexible tagging system for tasks';
-ALTER TABLE task_tag_relationships COMMENT = 'Many-to-many relationship between tasks and tags';
-ALTER TABLE task_comments COMMENT = 'Comments and discussions on tasks';
-ALTER TABLE task_activity_log COMMENT = 'Audit trail for task changes and activities';
+ALTER TABLE todo_task.tasks COMMENT = 'Core tasks with user assignments, categories, and tracking';
+ALTER TABLE todo_task.task_categories COMMENT = 'User-defined categories for organizing tasks';
+ALTER TABLE todo_task.task_tags COMMENT = 'Flexible tagging system for tasks';
+ALTER TABLE todo_task.task_tag_relationships COMMENT = 'Many-to-many relationship between tasks and tags';
+ALTER TABLE todo_task.task_comments COMMENT = 'Comments and discussions on tasks';
+ALTER TABLE todo_task.task_activity_log COMMENT = 'Audit trail for task changes and activities';
 
 -- ============================================
 -- PERFORMANCE OPTIMIZATION INDEXES
 -- ============================================
 
--- Additional performance indexes
-CREATE INDEX idx_tasks_user_status_priority ON tasks(user_id, completed, priority);
-CREATE INDEX idx_tasks_due_status ON tasks(due_date, completed);
-CREATE INDEX idx_activity_log_task_type_date ON task_activity_log(task_id, activity_type, created_at);
-CREATE INDEX idx_comments_task_user_date ON task_comments(task_id, user_id, created_at);
+CREATE INDEX idx_tasks_user_status_priority ON todo_task.tasks(user_id, completed, priority);
+CREATE INDEX idx_tasks_due_status ON todo_task.tasks(due_date, completed);
+CREATE INDEX idx_activity_log_task_type_date ON todo_task.task_activity_log(task_id, activity_type, created_at);
+CREATE INDEX idx_comments_task_user_date ON todo_task.task_comments(task_id, user_id, created_at);
 
 -- ============================================
 -- VERIFICATION QUERIES
 -- ============================================
 
--- Verify table creation and sample data
-SELECT 'Tasks' as table_name, COUNT(*) as record_count FROM tasks
+SELECT 'Tasks' as table_name, COUNT(*) as record_count FROM todo_task.tasks
 UNION ALL
-SELECT 'Categories', COUNT(*) FROM task_categories
+SELECT 'Categories', COUNT(*) FROM todo_task.task_categories
 UNION ALL
-SELECT 'Tags', COUNT(*) FROM task_tags
+SELECT 'Tags', COUNT(*) FROM todo_task.task_tags
 UNION ALL
-SELECT 'Comments', COUNT(*) FROM task_comments
+SELECT 'Comments', COUNT(*) FROM todo_task.task_comments
 UNION ALL
-SELECT 'Activity Logs', COUNT(*) FROM task_activity_log;
+SELECT 'Activity Logs', COUNT(*) FROM todo_task.task_activity_log;

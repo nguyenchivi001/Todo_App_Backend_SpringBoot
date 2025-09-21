@@ -1,6 +1,7 @@
 package com.todoapp.task.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.todoapp.task.enums.Priority;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -77,14 +78,18 @@ public class Task {
     @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private TaskCategory category;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "taskId",
             cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY)
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     private List<TaskComment> comments = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "taskId",
             cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY)
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     private Set<TaskTagRelationship> tags = new HashSet<>();
 
     // Constructor

@@ -1,5 +1,4 @@
--- Users table
-CREATE TABLE users (
+CREATE TABLE todo_auth.users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -21,7 +20,7 @@ CREATE TABLE users (
 );
 
 -- Refresh tokens table
-CREATE TABLE refresh_tokens (
+CREATE TABLE todo_auth.refresh_tokens (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     token VARCHAR(500) NOT NULL UNIQUE,
     user_id BIGINT NOT NULL,
@@ -32,7 +31,7 @@ CREATE TABLE refresh_tokens (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_used TIMESTAMP NULL,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES todo_auth.users(id) ON DELETE CASCADE,
 
     INDEX idx_token (token),
     INDEX idx_user_id (user_id),
@@ -46,13 +45,13 @@ CREATE TABLE refresh_tokens (
 );
 
 -- User roles table
-CREATE TABLE user_roles (
+CREATE TABLE todo_auth.user_roles (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     role_name VARCHAR(50) NOT NULL DEFAULT 'USER',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES todo_auth.users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_role (user_id, role_name),
 
     INDEX idx_user_id (user_id),
@@ -60,7 +59,7 @@ CREATE TABLE user_roles (
 );
 
 -- Login history table
-CREATE TABLE login_history (
+CREATE TABLE todo_auth.login_history (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     ip_address VARCHAR(45),
@@ -69,7 +68,7 @@ CREATE TABLE login_history (
     failure_reason VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES todo_auth.users(id) ON DELETE CASCADE,
 
     INDEX idx_user_id (user_id),
     INDEX idx_ip_address (ip_address),
@@ -80,7 +79,7 @@ CREATE TABLE login_history (
 );
 
 -- Password reset tokens table
-CREATE TABLE password_reset_tokens (
+CREATE TABLE todo_auth.password_reset_tokens (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     token VARCHAR(255) NOT NULL UNIQUE,
     user_id BIGINT NOT NULL,
@@ -89,7 +88,7 @@ CREATE TABLE password_reset_tokens (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     used_at TIMESTAMP NULL,
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES todo_auth.users(id) ON DELETE CASCADE,
 
     INDEX idx_token (token),
     INDEX idx_user_id (user_id),
@@ -98,47 +97,39 @@ CREATE TABLE password_reset_tokens (
 );
 
 -- Insert default admin user (password: admin123456)
-INSERT INTO users (username, email, password, first_name, last_name, enabled) VALUES
+INSERT INTO todo_auth.users (username, email, password, first_name, last_name, enabled) VALUES
 ('admin', 'admin@todo.com', '$2a$12$A.qVSsI9qED0UZ2t2TNZv.fExC354uctVpLoj1qz2jJ/VO6q3nG6S', 'System', 'Administrator', TRUE);
 
 -- Insert default user role for admin
-INSERT INTO user_roles (user_id, role_name)
-SELECT id, 'ADMIN' FROM users WHERE username = 'admin';
+INSERT INTO todo_auth.user_roles (user_id, role_name)
+SELECT id, 'ADMIN' FROM todo_auth.users WHERE username = 'admin';
 
-INSERT INTO user_roles (user_id, role_name)
-SELECT id, 'USER' FROM users WHERE username = 'admin';
+INSERT INTO todo_auth.user_roles (user_id, role_name)
+SELECT id, 'USER' FROM todo_auth.users WHERE username = 'admin';
 
 -- Create indexes for performance optimization
-CREATE INDEX idx_users_enabled_locked ON users(enabled, account_locked);
-CREATE INDEX idx_refresh_tokens_valid ON refresh_tokens(revoked, expires_at);
-CREATE INDEX idx_login_history_recent ON login_history(created_at DESC, user_id);
+CREATE INDEX idx_users_enabled_locked ON todo_auth.users(enabled, account_locked);
+CREATE INDEX idx_refresh_tokens_valid ON todo_auth.refresh_tokens(revoked, expires_at);
+CREATE INDEX idx_login_history_recent ON todo_auth.login_history(created_at DESC, user_id);
 
 -- Create views
-CREATE VIEW active_users AS
-SELECT
-    id,
-    username,
-    email,
-    first_name,
-    last_name,
-    last_login,
-    created_at
-FROM users
+CREATE VIEW todo_auth.active_users AS
+SELECT id, username, email, first_name, last_name, last_login, created_at
+FROM todo_auth.users
 WHERE enabled = TRUE AND account_locked = FALSE;
 
-CREATE VIEW user_statistics AS
-SELECT
-    DATE(created_at) as registration_date,
-    COUNT(*) as registrations_count
-FROM users
+CREATE VIEW todo_auth.user_statistics AS
+SELECT DATE(created_at) as registration_date,
+       COUNT(*) as registrations_count
+FROM todo_auth.users
 GROUP BY DATE(created_at)
 ORDER BY registration_date DESC;
 
--- Create triggers
+-- Create trigger
 DELIMITER //
 
-CREATE TRIGGER update_users_timestamp
-    BEFORE UPDATE ON users
+CREATE TRIGGER todo_auth.update_users_timestamp
+    BEFORE UPDATE ON todo_auth.users
     FOR EACH ROW
 BEGIN
     SET NEW.updated_at = CURRENT_TIMESTAMP;
@@ -147,8 +138,8 @@ END//
 DELIMITER ;
 
 -- Add comments to tables
-ALTER TABLE users COMMENT = 'User accounts and authentication information';
-ALTER TABLE refresh_tokens COMMENT = 'JWT refresh tokens for maintaining user sessions';
-ALTER TABLE user_roles COMMENT = 'User role assignments for authorization';
-ALTER TABLE login_history COMMENT = 'Login attempt history for security auditing';
-ALTER TABLE password_reset_tokens COMMENT = 'Password reset tokens for account recovery';
+ALTER TABLE todo_auth.users COMMENT = 'User accounts and authentication information';
+ALTER TABLE todo_auth.refresh_tokens COMMENT = 'JWT refresh tokens for maintaining user sessions';
+ALTER TABLE todo_auth.user_roles COMMENT = 'User role assignments for authorization';
+ALTER TABLE todo_auth.login_history COMMENT = 'Login attempt history for security auditing';
+ALTER TABLE todo_auth.password_reset_tokens COMMENT = 'Password reset tokens for account recovery';

@@ -1,6 +1,7 @@
 package com.todoapp.task.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -61,6 +62,7 @@ public class TaskCategory {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "categoryId",
             fetch = FetchType.LAZY)
     private List<Task> tasks = new ArrayList<>();

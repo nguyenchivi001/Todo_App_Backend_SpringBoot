@@ -1,5 +1,12 @@
-CREATE DATABASE IF NOT EXISTS todo_auth;
-CREATE DATABASE IF NOT EXISTS todo_task;
+-- Drop existing databases if they exist (optional, for clean setup)
+DROP DATABASE IF EXISTS todo_auth;
+DROP DATABASE IF EXISTS todo_task;
 
--- Set default database for subsequent scripts
-USE todo_auth;
+-- Create databases with proper character set and collation
+CREATE DATABASE todo_auth
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE todo_task
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
